@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery DApp - Decentralized Lottery Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        // Make ethers globally available
+        window.ethers = window.ethers || ethers;
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            @apply bg-white rounded-2xl shadow-xl p-8 border border-gray-100;
+        }
+        .btn-primary {
+            @apply bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
+        }
+        .btn-secondary {
+            @apply bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
+        }
+        .wallet-connect-btn {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%) !important;
+            color: white !important;
+            padding: 1.5rem 3rem !important;
+            border-radius: 1rem !important;
+            font-weight: 700 !important;
+            font-size: 1.25rem !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+            transition: all 0.3s ease !important;
+            border: none !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+            overflow: hidden !important;
+            min-width: 350px !important;
+            min-height: 80px !important;
+            margin: 0 auto !important;
+        }
+        .wallet-connect-btn:hover {
+            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #DB2777 100%) !important;
+            transform: translateY(-4px) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        }
+        .wallet-connect-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .wallet-connect-btn:hover::before {
+            left: 100%;
+        }
+        .wallet-connect-btn span {
+            z-index: 1;
+            position: relative;
+        }
+        .wallet-connect-btn svg {
+            z-index: 1;
+            position: relative;
+        }
+        .wallet-icon {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(147, 51, 234, 0.3);
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        /* Modal animations */
+        #wallet-modal {
+            transition: all 0.3s ease;
+        }
+        #wallet-modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #wallet-modal:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #wallet-modal .relative > div:last-child {
+            transition: all 0.3s ease;
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        #wallet-modal:not(.hidden) .relative > div:last-child {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .wallet-option-btn {
+            transition: all 0.2s ease;
+            transform: scale(1);
+        }
+        .wallet-option-btn:hover {
+            transform: scale(1.02);
+        }
+        .wallet-option-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                        <span class="text-white text-xl">🎰</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">Lottery DApp</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        How it Works
+                    </button>
+                    <button class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        Prizes
+                    </button>
+                    <button class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        FAQ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Wallet Connection -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center mb-16">
+            <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Win Big with
+                </span>
+                <br>
+                Decentralized Lottery
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                Experience the future of gaming with our transparent, secure, and fair lottery platform. 
+                Connect your wallet and join thousands of winners!
+            </p>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="text-3xl font-bold text-indigo-600 mb-2">$2.5M+</div>
+                    <div class="text-sm text-gray-600">Total Prize Pool</div>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="text-3xl font-bold text-purple-600 mb-2">10,000+</div>
+                    <div class="text-sm text-gray-600">Active Players</div>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                    <div class="text-3xl font-bold text-green-600 mb-2">98.5%</div>
+                    <div class="text-sm text-gray-600">Payout Rate</div>
+                </div>
+            </div>
+
+            <!-- PROMINENT WALLET CONNECTION SECTION -->
+            <div id="wallet-section" class="max-w-2xl mx-auto">
+                <!-- Connect Wallet State -->
+                <div id="connect-wallet">
+                    <div class="hero-gradient rounded-3xl p-12 text-white relative overflow-hidden">
+                        <div class="absolute inset-0 bg-black opacity-10"></div>
+                        <div class="relative z-10">
+                            <div class="floating mb-8">
+                                <div class="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto">
+                                    <span class="text-5xl">🔗</span>
+                                </div>
+                            </div>
+                            
+                            <h2 class="text-3xl font-bold mb-4">Connect Your Wallet</h2>
+                            <p class="text-xl mb-8 text-white/90">
+                                Join the lottery and start winning amazing prizes!
+                            </p>
+                            
+                            <button id="connect-btn" class="wallet-connect-btn mb-8" onclick="openWalletModal()">
+                                <span class="wallet-icon text-3xl mr-3">🔗</span>
+                                <span>Connect Wallet</span>
+                                <svg class="w-6 h-6 ml-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                            </button>
+                            
+                                                        
+                            <!-- Supported Wallets -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <div class="flex items-center justify-center space-x-2 text-sm">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Supports MetaMask, WalletConnect, Coinbase Wallet, and more</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connected Wallet State -->
+                <div id="wallet-connected" class="hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl p-8 text-white relative overflow-hidden">
+                        <div class="absolute inset-0 bg-black opacity-10"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-2xl font-bold mb-1">Wallet Connected!</h3>
+                                        <p id="wallet-address" class="text-white/90 font-mono"></p>
+                                    </div>
+                                </div>
+                                <button id="disconnect-btn" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition-colors">
+                                    Disconnect
+                                </button>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div class="text-sm text-white/70 mb-1">Network</div>
+                                    <div id="network-name" class="text-xl font-semibold"></div>
+                                </div>
+                                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div class="text-sm text-white/70 mb-1">Balance</div>
+                                    <div id="wallet-balance" class="text-xl font-semibold"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Content (Hidden until wallet connected) -->
+        <div id="app-content" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- Buy Ticket Card -->
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Buy Lottery Ticket</h2>
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <span class="text-2xl">🎫</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-gray-600">Ticket Price</span>
+                                <span class="text-2xl font-bold text-indigo-600">0.01 ETH</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Current Prize Pool</span>
+                                <span id="prize-pool" class="text-2xl font-bold text-green-600">0.5 ETH</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-xl p-6">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-sm font-medium text-blue-800">Smart Contract</span>
+                            </div>
+                            <p id="contract-address" class="text-sm font-mono text-blue-600 break-all">
+                                0x1631ae8A44291EC079BB93e28613b312D6EA7D1d
+                            </p>
+                        </div>
+
+                        <button id="buy-ticket-btn" class="w-full btn-primary !visible !block" style="display: block !important; visibility: visible !important;">
+                            <span class="flex items-center justify-center space-x-2">
+                                <span>🎫</span>
+                                <span>Buy Ticket (0.01 ETH)</span>
+                            </span>
+                        </button>
+                        
+                        <!-- Backup Buy Button -->
+                        <button id="buy-ticket-backup" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200" style="display: block !important;" onclick="buyTicket()">
+                            <span class="flex items-center justify-center space-x-2">
+                                <span>🎫</span>
+                                <span>Buy Lottery Ticket (0.01 ETH)</span>
+                            </span>
+                        </button>
+                        
+                        <p class="text-xs text-gray-500 text-center">
+                            Each ticket gives you a chance to win the entire prize pool!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Players Card -->
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Current Players</h2>
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="text-2xl">👥</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-4">
+                                <div class="text-3xl font-bold text-indigo-600 mb-1" id="total-players">4</div>
+                                <div class="text-sm text-gray-600">Total Players</div>
+                            </div>
+                            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">
+                                <div class="text-3xl font-bold text-purple-600 mb-1" id="total-tickets">7</div>
+                                <div class="text-sm text-gray-600">Tickets Sold</div>
+                            </div>
+                        </div>
+
+                        <div id="players-list" class="space-y-3 max-h-80 overflow-y-auto">
+                            <!-- Players will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Winner Section -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Winner Announcement</h2>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <span class="text-2xl">🏆</span>
+                    </div>
+                </div>
+                
+                <div id="winner-section">
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-8 text-center">
+                        <div class="w-20 h-20 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">⏳</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-yellow-800 mb-2">
+                            Drawing Soon...
+                        </h3>
+                        <p class="text-yellow-600">
+                            The winner will be announced when the lottery ends. Good luck!
+                        </p>
+                    </div>
+                </div>
+
+                <div id="owner-controls" class="mt-6" style="display: block !important;">
+                    <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm font-medium text-red-800">Manager Controls</span>
+                        </div>
+                        <p class="text-sm text-red-600 mb-4">
+                            Only the contract manager can control the lottery.
+                        </p>
+                        
+                        <!-- Debug Contract State -->
+                        <div class="mt-4 p-4 bg-purple-50 rounded-lg">
+                            <p class="text-sm text-purple-800 mb-2">Debug Contract State:</p>
+                            <button onclick="debugContract()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-sm">
+                                🔍 Check Contract Status
+                            </button>
+                            <div id="debug-info" class="mt-2 text-xs text-purple-600 font-mono"></div>
+                        </div>
+                        
+                        <!-- Emergency Reset Button -->
+                        <div class="mt-4 p-4 bg-red-50 rounded-lg">
+                            <p class="text-sm text-red-800 mb-2">Emergency Options:</p>
+                            <button onclick="emergencyWithdraw()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm">
+                                🚨 Emergency Withdraw (Manager Only)
+                            </button>
+                            <p class="text-xs text-red-600 mt-2">Use only if lottery is stuck!</p>
+                        </div>
+                        
+                        <!-- Test Reset Button -->
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+                            <p class="text-sm text-yellow-800 mb-2">Debug Test:</p>
+                            <button onclick="testReset()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-sm">
+                                🧪 Test Reset Function
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button id="reset-lottery-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200" onclick="resetLottery()">
+                                <span class="flex items-center justify-center space-x-2">
+                                    <span>🔄</span>
+                                    <span>Reset Lottery (Start New Round)</span>
+                                </span>
+                            </button>
+                            
+                            <button id="pick-winner-btn" class="w-full btn-secondary">
+                                <span class="flex items-center justify-center space-x-2">
+                                    <span>🎯</span>
+                                    <span>Pick Winner</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallet Modal -->
+        <div id="wallet-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center">
+                <div class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" onclick="closeWalletModal()"></div>
+                
+                <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-gradient-to-br from-purple-900 to-blue-900 p-6 text-left align-middle shadow-xl transition-all border border-white/20">
+                    <h3 class="text-2xl font-bold leading-6 text-white text-center mb-6">
+                        Connect Your Wallet
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <button onclick="connectWalletWithMetaMask()" class="wallet-option-btn w-full bg-white/10 hover:bg-white/20 rounded-xl p-4 transition-all duration-200 flex items-center space-x-4 border border-white/10 hover:border-yellow-500/50">
+                            <div class="text-4xl">🦊</div>
+                            <div class="flex-1 text-left">
+                                <div class="text-white font-semibold">
+                                    MetaMask
+                                    <span id="connecting-text" class="ml-2 text-xs text-yellow-400 hidden">(Connecting...)</span>
+                                </div>
+                                <div class="text-gray-400 text-sm">Connect to your MetaMask wallet</div>
+                            </div>
+                            <div class="text-white">→</div>
+                        </button>
+                        
+                        <button onclick="openWalletLink('https://walletconnect.com/')" class="wallet-option-btn w-full bg-white/10 hover:bg-white/20 rounded-xl p-4 transition-all duration-200 flex items-center space-x-4 border border-white/10 hover:border-yellow-500/50">
+                            <div class="text-4xl">🔗</div>
+                            <div class="flex-1 text-left">
+                                <div class="text-white font-semibold">WalletConnect</div>
+                                <div class="text-gray-400 text-sm">Connect with WalletConnect</div>
+                            </div>
+                            <div class="text-white">→</div>
+                        </button>
+                        
+                        <button onclick="openWalletLink('https://www.coinbase.com/wallet')" class="wallet-option-btn w-full bg-white/10 hover:bg-white/20 rounded-xl p-4 transition-all duration-200 flex items-center space-x-4 border border-white/10 hover:border-yellow-500/50">
+                            <div class="text-4xl">💰</div>
+                            <div class="flex-1 text-left">
+                                <div class="text-white font-semibold">Coinbase Wallet</div>
+                                <div class="text-gray-400 text-sm">Connect to Coinbase Wallet</div>
+                            </div>
+                            <div class="text-white">→</div>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-400 text-sm">
+                            New to Ethereum?{' '}
+                            <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" class="text-yellow-400 hover:text-yellow-300">
+                                Learn how to get started
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <button onclick="closeWalletModal()" class="mt-6 w-full px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Status -->
+        <div id="transaction-status" class="hidden fixed bottom-6 right-6 bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 max-w-sm z-50">
+            <div class="flex items-center space-x-4">
+                <div id="status-icon"></div>
+                <div class="flex-1">
+                    <p id="status-title" class="font-semibold text-gray-900"></p>
+                    <p id="status-message" class="text-sm text-gray-600"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                            <span class="text-white text-xl">🎰</span>
+                        </div>
+                        <h3 class="text-xl font-bold">Lottery DApp</h3>
+                    </div>
+                    <p class="text-gray-400">
+                        The most trusted decentralized lottery platform.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Game</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">How to Play</a></li>
+                        <li><a href="#" class="hover:text-white">Prizes</a></li>
+                        <li><a href="#" class="hover:text-white">Rules</a></li>
+                        <li><a href="#" class="hover:text-white">Fairness</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white">Contact</a></li>
+                        <li><a href="#" class="hover:text-white">Terms</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700">
+                            <span>🐦</span>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700">
+                            <span>📱</span>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700">
+                            <span>💬</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 Lottery DApp. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Contract ABI (new simplified lottery contract)
+        const LOTTERY_ABI = [
+            "function buyTicket(address referralCode) payable",
+            "function buyPremiumTicket(address referralCode) payable",
+            "function buyVIPTicket(address referralCode) payable",
+            "function buyMultipleTickets(uint256 numberOfTickets, uint256 ticketType, address referralCode) payable",
+            "function selectWinner()",
+            "function resetLottery()",
+            "function claimReferralRewards()",
+            "function emergencyWithdraw()",
+            "function withdrawDevelopmentFund()",
+            "function getBalance() view returns (uint256)",
+            "function getPrizePool() view returns (uint256)",
+            "function getPlayers() view returns (address[])",
+            "function getPlayerCount() view returns (uint256)",
+            "function getPlayerTicketCount(address player) view returns (uint256)",
+            "function getRemainingTime() view returns (uint256)",
+            "function isActive() view returns (bool)",
+            "function lastWinner() view returns (address)",
+            "function lastPrize() view returns (uint256)",
+            "function roundNumber() view returns (uint256)",
+            "function manager() view returns (address)",
+            "function ticketPrice() view returns (uint256)",
+            "function STANDARD_TICKET() view returns (uint256)",
+            "function PREMIUM_TICKET() view returns (uint256)",
+            "function VIP_TICKET() view returns (uint256)",
+            "function LOTTERY_DURATION() view returns (uint256)",
+            "function JACKPOT_PERCENT() view returns (uint256)",
+            "function REFERRAL_BONUS() view returns (uint256)"
+        ];
+
+        const CONTRACT_ADDRESS = "0xD95C0dDa842AC8F4ae2f40f42dFA1F81763D863e";
+        let provider, signer, contract, userAddress;
+
+        // DOM Elements
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const connectWalletDiv = document.getElementById('connect-wallet');
+        const walletConnected = document.getElementById('wallet-connected');
+        const appContent = document.getElementById('app-content');
+        const buyTicketBtn = document.getElementById('buy-ticket-btn');
+        const pickWinnerBtn = document.getElementById('pick-winner-btn');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            setupEventListeners();
+        });
+
+        // Modal functions
+        function openWalletModal() {
+            document.getElementById('wallet-modal').classList.remove('hidden');
+            document.getElementById('wallet-modal').classList.add('flex');
+        }
+
+        function closeWalletModal() {
+            document.getElementById('wallet-modal').classList.add('hidden');
+            document.getElementById('wallet-modal').classList.remove('flex');
+        }
+
+        function openWalletLink(url) {
+            window.open(url, '_blank');
+        }
+
+        async function connectWalletWithMetaMask() {
+            // Show connecting state
+            document.getElementById('connecting-text').classList.remove('hidden');
+            
+            // Close modal
+            closeWalletModal();
+            
+            // Connect wallet
+            await connectWallet();
+            
+            // Hide connecting state
+            document.getElementById('connecting-text').classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            connectBtn.addEventListener('click', connectWallet);
+            disconnectBtn.addEventListener('click', disconnectWallet);
+            buyTicketBtn.addEventListener('click', buyTicket);
+            pickWinnerBtn.addEventListener('click', pickWinner);
+            
+            // Listen for account changes
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', handleChainChanged);
+            }
+        }
+
+        async function checkConnection() {
+            // Don't auto-connect - always require user to click connect button
+            console.log('Auto-connect disabled - user must manually connect');
+        }
+
+        async function connectWallet() {
+            // Check if ethers is loaded
+            if (typeof ethers === 'undefined') {
+                showStatus('error', 'Library Error', 'Ethers.js library not loaded. Please refresh the page.');
+                return;
+            }
+
+            if (typeof window.ethereum === 'undefined') {
+                showStatus('error', 'MetaMask Not Found', 'Please install MetaMask browser extension');
+                return;
+            }
+
+            try {
+                showStatus('loading', 'Connecting', 'Requesting account access...');
+                
+                console.log('Requesting fresh account access...');
+                // Always request account access to trigger MetaMask popup
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                console.log('Accounts received:', accounts);
+                
+                if (accounts.length === 0) {
+                    showStatus('error', 'No Accounts', 'No accounts found. Please create an account in MetaMask.');
+                    return;
+                }
+                
+                // Force network check
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                console.log('Current chainId:', chainId);
+                
+                showStatus('loading', 'Connecting', 'Initializing provider...');
+                
+                // Initialize provider and signer
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                console.log('User address:', userAddress);
+                
+                // Initialize contract
+                contract = new ethers.Contract(CONTRACT_ADDRESS, LOTTERY_ABI, signer);
+                
+                // Update UI
+                updateWalletUI();
+                loadContractData();
+                
+                showStatus('success', 'Connected!', 'Wallet connected successfully');
+                
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                showStatus('error', 'Connection Failed', error.message || 'Failed to connect wallet');
+            }
+        }
+
+        function disconnectWallet() {
+            userAddress = null;
+            provider = null;
+            signer = null;
+            contract = null;
+            
+            connectWalletDiv.classList.remove('hidden');
+            walletConnected.classList.add('hidden');
+            appContent.classList.add('hidden');
+            
+            showStatus('info', 'Disconnected', 'Wallet disconnected');
+        }
+
+        async function updateWalletUI() {
+            if (!userAddress) return;
+
+            // Update wallet info
+            document.getElementById('wallet-address').textContent = 
+                `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+            
+            // Get network info
+            const network = await provider.getNetwork();
+            const networkNames = {
+                1: 'Ethereum Mainnet',
+                3: 'Ropsten',
+                4: 'Rinkeby', 
+                5: 'Goerli',
+                11155111: 'Sepolia Testnet',
+                137: 'Polygon Mainnet',
+                80001: 'Polygon Mumbai',
+                80002: 'Polygon Amoy',
+                97: 'BSC Mainnet',
+                56: 'BSC Mainnet',
+                43114: 'BSC Testnet'
+            };
+            const networkName = networkNames[network.chainId] || `Chain ID: ${network.chainId}`;
+            document.getElementById('network-name').textContent = networkName;
+            
+            // Get balance
+            const balance = await provider.getBalance(userAddress);
+            document.getElementById('wallet-balance').textContent = 
+                `${ethers.utils.formatEther(balance).slice(0, 6)} ETH`;
+            
+            console.log(`Connected to network: ${networkName} (Chain ID: ${network.chainId})`);
+            console.log(`Contract address: ${CONTRACT_ADDRESS}`);
+            
+            // Check if we're on the right network for the contract
+            if (network.chainId !== 11155111) {
+                console.log('Warning: Contract may not be deployed on this network');
+                showStatus('info', 'Network Mismatch', 'Please switch to Sepolia Testnet for the deployed contract');
+            }
+            
+            // Show connected UI
+            connectWalletDiv.classList.add('hidden');
+            walletConnected.classList.remove('hidden');
+            appContent.classList.remove('hidden');
+        }
+
+        async function loadContractData() {
+            if (!contract) {
+                console.log('No contract available, using mock data');
+                loadMockData();
+                return;
+            }
+
+            try {
+                console.log('Loading contract data...');
+                showStatus('loading', 'Loading', 'Fetching contract data...');
+                
+                // First, check if contract exists by calling a static method
+                console.log('Checking if contract exists at address:', CONTRACT_ADDRESS);
+                
+                // Try to get contract code at the address
+                const code = await provider.getCode(CONTRACT_ADDRESS);
+                console.log('Contract code length:', code.length);
+                
+                if (code === '0x') {
+                    console.log('No contract deployed at this address');
+                    loadMockData();
+                    showStatus('info', 'Demo Mode', `No contract found at ${CONTRACT_ADDRESS} on current network. Using demo data.`);
+                    return;
+                }
+                
+                // Load contract data with shorter timeout
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Contract call timeout')), 3000)
+                );
+                
+                console.log('Contract exists, attempting to read data...');
+                
+                // Load all data in parallel for the new simplified contract
+                const [balance, prizePool, players, playerCount, remainingTime, isActive, lastWinner, lastPrize, roundNumber, ticketPrice] = await Promise.allSettled([
+                    Promise.race([contract.getBalance(), timeoutPromise]),
+                    Promise.race([contract.getPrizePool(), timeoutPromise]),
+                    Promise.race([contract.getPlayers(), timeoutPromise]),
+                    Promise.race([contract.getPlayerCount(), timeoutPromise]),
+                    Promise.race([contract.getRemainingTime(), timeoutPromise]),
+                    Promise.race([contract.isActive(), timeoutPromise]),
+                    Promise.race([contract.lastWinner(), timeoutPromise]),
+                    Promise.race([contract.lastPrize(), timeoutPromise]),
+                    Promise.race([contract.roundNumber(), timeoutPromise]),
+                    Promise.race([contract.ticketPrice(), timeoutPromise])
+                ]);
+                
+                // Extract results with fallbacks
+                const resolvedBalance = balance.status === 'fulfilled' ? balance.value : ethers.utils.parseEther('0');
+                const resolvedPrizePool = prizePool.status === 'fulfilled' ? prizePool.value : ethers.utils.parseEther('0.05');
+                const resolvedPlayers = players.status === 'fulfilled' ? players.value : [];
+                const resolvedPlayerCount = playerCount.status === 'fulfilled' ? playerCount.value : 0;
+                const resolvedRemainingTime = remainingTime.status === 'fulfilled' ? remainingTime.value : 3600;
+                const resolvedIsActive = isActive.status === 'fulfilled' ? isActive.value : false;
+                const resolvedLastWinner = lastWinner.status === 'fulfilled' ? lastWinner.value : '0x0000000000000000000000000000000000000000';
+                const resolvedLastPrize = lastPrize.status === 'fulfilled' ? lastPrize.value : ethers.utils.parseEther('0');
+                const resolvedRoundNumber = roundNumber.status === 'fulfilled' ? roundNumber.value : 1;
+                const resolvedTicketPrice = ticketPrice.status === 'fulfilled' ? ticketPrice.value : ethers.utils.parseEther('0.01');
+                
+                console.log('Contract data loaded in parallel');
+                console.log('Balance:', ethers.utils.formatEther(resolvedBalance));
+                console.log('Prize Pool:', ethers.utils.formatEther(resolvedPrizePool));
+                console.log('Player Count:', resolvedPlayerCount.toString());
+                console.log('Remaining Time:', resolvedRemainingTime.toString());
+                console.log('Is Active:', resolvedIsActive);
+                console.log('Round Number:', resolvedRoundNumber.toString());
+                
+                // Update UI with real contract data
+                document.getElementById('prize-pool').textContent = 
+                    `${ethers.utils.formatEther(resolvedPrizePool)} ETH`;
+                document.getElementById('total-players').textContent = resolvedPlayerCount.toString();
+                document.getElementById('total-tickets').textContent = resolvedPlayerCount.toString();
+                
+                // Update players list with actual players from contract
+                updatePlayersList(resolvedPlayers);
+                
+                // Update winner section with lottery status
+                const winnerSection = document.getElementById('winner-section');
+                if (!resolvedIsActive) {
+                    winnerSection.innerHTML = `
+                        <div class="bg-gradient-to-r from-gray-50 to-red-50 rounded-xl p-8 text-center">
+                            <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-4xl">⏸️</span>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">
+                                Lottery Inactive
+                            </h3>
+                            <p class="text-gray-600 mb-4">
+                                The lottery round has ended. Click "Reset Lottery" to start a new 30-second round!
+                            </p>
+                            <button onclick="resetLottery()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                                🔄 Start New Round
+                            </button>
+                        </div>
+                    `;
+                } else if (resolvedRemainingTime.toNumber() > 0) {
+                    const hours = Math.floor(resolvedRemainingTime / 3600);
+                    const minutes = Math.floor((resolvedRemainingTime % 3600) / 60);
+                    const seconds = resolvedRemainingTime % 60;
+                    
+                    winnerSection.innerHTML = `
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 text-center">
+                            <div class="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-4xl">⏰</span>
+                            </div>
+                            <h3 class="text-xl font-semibold text-blue-800 mb-2">
+                                Round ${resolvedRoundNumber.toString()} Active
+                            </h3>
+                            <div class="text-3xl font-bold text-blue-600 mb-4">
+                                ${hours}h ${minutes}m ${seconds}s
+                            </div>
+                            <p class="text-blue-600 mb-4">
+                                Time remaining until winner selection
+                            </p>
+                            <div class="bg-green-100 rounded-lg p-3">
+                                <p class="text-green-800 font-semibold">🎫 Buy tickets now!</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    if (resolvedLastWinner !== '0x0000000000000000000000000000000000000000') {
+                        winnerSection.innerHTML = `
+                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 text-center">
+                                <div class="w-20 h-20 bg-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span class="text-4xl">🎉</span>
+                                </div>
+                                <h3 class="text-xl font-semibold text-green-800 mb-2">
+                                    Last Winner
+                                </h3>
+                                <p class="text-sm font-mono text-green-600 break-all mb-2">
+                                    ${resolvedLastWinner}
+                                </p>
+                                <p class="text-green-600 mb-4">
+                                    Prize: ${ethers.utils.formatEther(resolvedLastPrize)} ETH
+                                </p>
+                                <button onclick="resetLottery()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    🔄 Start New Round
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        winnerSection.innerHTML = `
+                            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-8 text-center">
+                                <div class="w-20 h-20 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span class="text-4xl">🎯</span>
+                                </div>
+                                <h3 class="text-xl font-semibold text-yellow-800 mb-2">
+                                    Time's Up! Ready for Winner Selection
+                                </h3>
+                                <p class="text-yellow-600 mb-4">
+                                    The 30-second lottery round has ended. Time to pick a winner!
+                                </p>
+                                <div class="space-y-2">
+                                    <button onclick="pickWinner()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg w-full">
+                                        🏆 Select Winner
+                                    </button>
+                                    <button onclick="resetLottery()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg w-full">
+                                        🔄 Start New Round
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Check if user is manager (owner)
+                try {
+                    const manager = await Promise.race([contract.manager(), timeoutPromise]);
+                    console.log('Contract manager:', manager);
+                    if (manager.toLowerCase() === userAddress.toLowerCase()) {
+                        document.getElementById('owner-controls').classList.remove('hidden');
+                    }
+                } catch (ownerError) {
+                    console.log('Could not check manager:', ownerError.message);
+                }
+                
+                showStatus('success', 'Connected', 'Contract data loaded successfully');
+                
+            } catch (error) {
+                console.error('Error loading contract data:', error);
+                console.log('Falling back to mock data');
+                
+                // Use mock data if contract call fails
+                loadMockData();
+                showStatus('info', 'Demo Mode', 'Using demo data. Contract may not be deployed on this network.');
+            }
+        }
+
+        function loadMockData() {
+            console.log('Loading mock data for demonstration...');
+            
+            // Mock data for demonstration
+            const mockPlayers = [
+                '0x1234567890123456789012345678901234567890',
+                '0x2345678901234567890123456789012345678901',
+                '0x3456789012345678901234567890123456789012',
+                '0x4567890123456789012345678901234567890123',
+                '0x5678901234567890123456789012345678901234'
+            ];
+            
+            // Update UI with mock data
+            document.getElementById('prize-pool').textContent = '0.05 ETH';
+            document.getElementById('total-players').textContent = mockPlayers.length;
+            document.getElementById('total-tickets').textContent = mockPlayers.length;
+            
+            updatePlayersList(mockPlayers);
+            
+            console.log('Mock data loaded successfully');
+        }
+
+        function updatePlayersList(players) {
+            const playersList = document.getElementById('players-list');
+            playersList.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors';
+                playerDiv.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">
+                                ${player.slice(0, 6)}...${player.slice(-4)}
+                            </p>
+                            <p class="text-xs text-gray-500">1 ticket</p>
+                        </div>
+                    </div>
+                    <div class="text-2xl">🎫</div>
+                `;
+                playersList.appendChild(playerDiv);
+            });
+        }
+
+        async function buyTicket() {
+            if (!contract) {
+                showStatus('error', 'Not Connected', 'Please connect your wallet first');
+                return;
+            }
+
+            try {
+                showStatus('loading', 'Buying Ticket', 'Processing transaction...');
+                
+                // Get ticket price from contract
+                const ticketPrice = await contract.ticketPrice();
+                console.log('Ticket price:', ethers.utils.formatEther(ticketPrice));
+                
+                // Buy 1 standard ticket with no referral (zero address) with lower gas limit
+                const tx = await contract.buyTicket('0x0000000000000000000000000000000000000000', {
+                    value: ticketPrice,
+                    gasLimit: 100000  // Lower gas limit
+                });
+                
+                showStatus('loading', 'Confirming', 'Waiting for confirmation...');
+                
+                await tx.wait();
+                
+                showStatus('success', 'Success!', 'Ticket purchased successfully!');
+                loadContractData(); // Refresh data
+                
+            } catch (error) {
+                console.error('Error buying ticket:', error);
+                showStatus('error', 'Transaction Failed', error.message || 'Failed to buy ticket');
+            }
+        }
+
+        async function debugContract() {
+            console.log('Debug contract button clicked!');
+            
+            if (!contract) {
+                console.log('No contract available');
+                return;
+            }
+            
+            const debugDiv = document.getElementById('debug-info');
+            debugDiv.innerHTML = 'Loading debug info...';
+            
+            try {
+                // Check all contract state variables
+                const [
+                    isActive,
+                    remainingTime,
+                    balance,
+                    prizePool,
+                    playerCount,
+                    roundNumber,
+                    manager,
+                    ticketPrice
+                ] = await Promise.all([
+                    contract.isActive(),
+                    contract.getRemainingTime(),
+                    contract.getBalance(),
+                    contract.getPrizePool(),
+                    contract.getPlayerCount(),
+                    contract.roundNumber(),
+                    contract.manager(),
+                    contract.ticketPrice()
+                ]);
+                
+                const debugInfo = `
+                    isActive: ${isActive}<br>
+                    remainingTime: ${remainingTime.toString()}<br>
+                    balance: ${ethers.utils.formatEther(balance)} ETH<br>
+                    prizePool: ${ethers.utils.formatEther(prizePool)} ETH<br>
+                    playerCount: ${playerCount.toString()}<br>
+                    roundNumber: ${roundNumber.toString()}<br>
+                    manager: ${manager}<br>
+                    ticketPrice: ${ethers.utils.formatEther(ticketPrice)} ETH<br>
+                    yourAddress: ${userAddress}<br>
+                    areYouManager: ${manager.toLowerCase() === userAddress.toLowerCase()}
+                `;
+                
+                debugDiv.innerHTML = debugInfo;
+                console.log('Contract state:', {
+                    isActive,
+                    remainingTime: remainingTime.toString(),
+                    balance: ethers.utils.formatEther(balance),
+                    prizePool: ethers.utils.formatEther(prizePool),
+                    playerCount: playerCount.toString(),
+                    roundNumber: roundNumber.toString(),
+                    manager,
+                    ticketPrice: ethers.utils.formatEther(ticketPrice),
+                    yourAddress: userAddress,
+                    areYouManager: manager.toLowerCase() === userAddress.toLowerCase()
+                });
+                
+            } catch (error) {
+                console.error('Debug error:', error);
+                debugDiv.innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function emergencyWithdraw() {
+            console.log('Emergency withdraw button clicked!');
+            
+            if (!contract) {
+                showStatus('error', 'Not Connected', 'Please connect your wallet first');
+                return;
+            }
+
+            try {
+                showStatus('loading', 'Emergency Withdraw', 'Withdrawing all funds from contract...');
+                
+                const tx = await contract.emergencyWithdraw();
+                console.log('Emergency withdraw transaction:', tx.hash);
+                
+                showStatus('loading', 'Confirming', 'Waiting for confirmation...');
+                
+                const receipt = await tx.wait();
+                console.log('Emergency withdraw confirmed:', receipt);
+                
+                showStatus('success', 'Emergency Withdraw Complete!', 'All funds withdrawn. You can now redeploy or reset the lottery.');
+                loadContractData(); // Refresh data
+                
+            } catch (error) {
+                console.error('Error with emergency withdraw:', error);
+                
+                if (error.message.includes('Only manager')) {
+                    showStatus('error', 'Access Denied', 'Only the contract manager can use emergency withdraw.');
+                } else {
+                    showStatus('error', 'Transaction Failed', error.message || 'Emergency withdraw failed');
+                }
+            }
+        }
+
+        function testReset() {
+            console.log('Test reset button clicked!');
+            alert('Test reset function called! Check console for details.');
+            
+            if (!contract) {
+                console.log('No contract available in test');
+                alert('No contract connected!');
+                return;
+            }
+            
+            console.log('Contract available in test');
+            console.log('User address:', userAddress);
+            console.log('Contract address:', CONTRACT_ADDRESS);
+            
+            // Test if we can call the function
+            contract.manager().then(manager => {
+                console.log('Contract manager:', manager);
+                console.log('Your address:', userAddress);
+                console.log('Are you the manager?', manager.toLowerCase() === userAddress.toLowerCase());
+                
+                if (manager.toLowerCase() === userAddress.toLowerCase()) {
+                    alert('You are the manager! Reset should work.');
+                } else {
+                    alert('You are NOT the manager. Only ' + manager.slice(0, 6) + '... can reset.');
+                }
+            }).catch(err => {
+                console.error('Error getting manager:', err);
+                alert('Error checking manager: ' + err.message);
+            });
+        }
+
+        async function resetLottery() {
+            console.log('Reset lottery button clicked!');
+            
+            if (!contract) {
+                console.log('No contract available');
+                showStatus('error', 'Not Connected', 'Please connect your wallet first');
+                return;
+            }
+
+            try {
+                showStatus('loading', 'Resetting Lottery', 'Starting new lottery round...');
+                console.log('Calling resetLottery function...');
+                
+                const tx = await contract.resetLottery();
+                console.log('Transaction submitted:', tx.hash);
+                
+                showStatus('loading', 'Confirming', 'Waiting for confirmation...');
+                
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+                
+                showStatus('success', 'Lottery Reset!', 'New round started with fresh 30-second timer!');
+                loadContractData(); // Refresh data
+                
+            } catch (error) {
+                console.error('Error resetting lottery:', error);
+                
+                // Handle specific contract errors
+                if (error.message.includes('Only manager')) {
+                    showStatus('error', 'Access Denied', 'Only the contract manager can reset the lottery. You are not the contract deployer.');
+                } else if (error.message.includes('must end first')) {
+                    showStatus('error', 'Cannot Reset', 'Current lottery must end before resetting. Call selectWinner first.');
+                } else {
+                    showStatus('error', 'Transaction Failed', error.message || 'Failed to reset lottery');
+                }
+            }
+        }
+
+        async function pickWinner() {
+            if (!contract) {
+                showStatus('error', 'Not Connected', 'Please connect your wallet first');
+                return;
+            }
+
+            try {
+                // Check if lottery is active and time has ended
+                const isActive = await contract.isActive();
+                const remainingTime = await contract.getRemainingTime();
+                
+                console.log('Lottery active:', isActive);
+                console.log('Remaining time:', remainingTime.toString());
+                
+                if (isActive && remainingTime.toNumber() > 0) {
+                    const hours = Math.floor(remainingTime / 3600);
+                    const minutes = Math.floor((remainingTime % 3600) / 60);
+                    const seconds = remainingTime % 60;
+                    
+                    showStatus('error', 'Lottery Active', 
+                        `Lottery is still active. Time remaining: ${hours}h ${minutes}m ${seconds}s. Winner can only be selected when time ends.`
+                    );
+                    return;
+                }
+                
+                if (!isActive) {
+                    showStatus('error', 'Lottery Inactive', 'The lottery is not currently active.');
+                    return;
+                }
+                
+                showStatus('loading', 'Selecting Winner', 'Picking a random winner...');
+                
+                const tx = await contract.selectWinner();
+                
+                showStatus('loading', 'Confirming', 'Waiting for confirmation...');
+                
+                await tx.wait();
+                
+                // Get winner info
+                const lastWinner = await contract.lastWinner();
+                const lastPrize = await contract.lastPrize();
+                
+                // Update winner display
+                const winnerSection = document.getElementById('winner-section');
+                if (lastWinner !== '0x0000000000000000000000000000000000000000') {
+                    winnerSection.innerHTML = `
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 text-center">
+                            <div class="w-20 h-20 bg-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-4xl">🎉</span>
+                            </div>
+                            <h3 class="text-xl font-semibold text-green-800 mb-2">
+                                Winner Selected!
+                            </h3>
+                            <p class="text-sm font-mono text-green-600 break-all mb-2">
+                                ${lastWinner}
+                            </p>
+                            <p class="text-green-600">
+                                Prize: ${ethers.utils.formatEther(lastPrize)} ETH
+                            </p>
+                        </div>
+                    `;
+                }
+                
+                showStatus('success', 'Winner Selected!', `Winner: ${lastWinner.slice(0, 6)}...${lastWinner.slice(-4)}`);
+                loadContractData(); // Refresh data
+                
+            } catch (error) {
+                console.error('Error selecting winner:', error);
+                
+                // Handle specific contract errors
+                if (error.message.includes('Only manager')) {
+                    showStatus('error', 'Access Denied', 'Only the contract manager can select winners.');
+                } else if (error.message.includes('No players')) {
+                    showStatus('error', 'No Players', 'No tickets have been purchased yet.');
+                } else {
+                    showStatus('error', 'Transaction Failed', error.message || 'Failed to select winner');
+                }
+            }
+        }
+
+        function showStatus(type, title, message) {
+            const statusDiv = document.getElementById('transaction-status');
+            const statusIcon = document.getElementById('status-icon');
+            const statusTitle = document.getElementById('status-title');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Set icon based on type
+            const icons = {
+                loading: '<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>',
+                success: '<div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>',
+                error: '<div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></div>',
+                info: '<div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></div>'
+            };
+            
+            statusIcon.innerHTML = icons[type] || icons.info;
+            statusTitle.textContent = title;
+            statusMessage.textContent = message;
+            
+            statusDiv.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds for success/info
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                disconnectWallet();
+            } else {
+                connectWallet();
+            }
+        }
+
+        function handleChainChanged(chainId) {
+            console.log('Chain changed to:', chainId);
+            // Reload the page to reset the app state
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
